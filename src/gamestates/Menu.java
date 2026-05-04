@@ -12,6 +12,7 @@ import java.awt.image.BufferedImage;
 public class Menu extends State implements Statemethods{
     private MenuButton[] buttons = new MenuButton[3];
     private BufferedImage backdropImg;
+
 //    private BufferedImage backgroundImg;
 //    private int menuX, menuY, menuWidth, menuHeight;
 

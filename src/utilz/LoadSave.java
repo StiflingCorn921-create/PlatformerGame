@@ -37,6 +37,18 @@ public class LoadSave {
 
     public static final String CRABBY_SPRITE = "crabby_sprite.png";
 
+    public static final String ZOMBIE_WALK   = "sprites/Zombie/Zombie_Walk.png";
+    public static final String ZOMBIE_ATTACK = "sprites/Zombie/Zombie_Attack.png";
+    public static final String ZOMBIE_HIT    = "sprites/Zombie/Zombie_Hit.png";
+
+    public static final String GAME_COMPLETED = "game_completed.png";
+    public static final String OPTIONS_MENU = "options_background.png";
+    public static final String DEATH_SCREEN = "death_screen.png";
+
+    public static final String ZOMBIE_DEATH  = "sprites/Zombie/Zombie_Death.png";
+
+    public static final String TRAP_ATLAS = "trap_atlas.png";
+
     public static final String STATUS_BAR = "health_power_bar.png";
 
     public static BufferedImage GetSpriteAtlas(String fileName){

@@ -18,6 +18,9 @@ public abstract class Enemy extends Entity{
     protected float attackDistance = Game.TILES_SIZE;
     protected boolean active = true;
     protected boolean attackChecked;
+    protected int attackBoxOffsetX;
+
+
 
     public Enemy(float x, float y, int width, int height, int enemyType) {
         super(x, y, width, height);
@@ -25,6 +28,13 @@ public abstract class Enemy extends Entity{
         maxHealth = GetMaxHealth(enemyType);
         currentHealth = maxHealth;
         walkSpeed = Game.SCALE * 0.35f;
+    }
+
+    protected void initAttackBox(int w, int h, int attackBoxOffsetX) {
+        attackBox = new Rectangle2D.Float(x, y,
+                (int)(w * Game.SCALE),
+                (int)(h * Game.SCALE));
+        this.attackBoxOffsetX = (int)(Game.SCALE * attackBoxOffsetX);
     }
 
     protected void firstUpdateCheck(int[][] lvlData){
@@ -36,7 +46,7 @@ public abstract class Enemy extends Entity{
     }
 
     protected void updateInAir(int[][] lvlData){
-        if(CanMoveHere(hitbox.x, hitbox.y, hitbox.width, hitbox.height, lvlData)){
+        if(CanMoveHere(hitbox.x, hitbox.y + airSpeed, hitbox.width, hitbox.height, lvlData)){
             hitbox.y += airSpeed;
             airSpeed += GRAVITY;
         }else{
@@ -100,12 +110,6 @@ public abstract class Enemy extends Entity{
         return absValue <= attackDistance;
     }
 
-    protected void newState(int enemyState){
-        this.state = enemyState;
-        aniTick = 0;
-        aniIndex = 0;
-    }
-
     public void hurt(int amount){
         currentHealth -= amount;
         if(currentHealth <= 0){
@@ -116,9 +120,8 @@ public abstract class Enemy extends Entity{
     }
 
     protected void checkEnemyHit(Rectangle2D.Float attackBox, Player player) {
-        if(attackBox.intersects(player.hitbox)){
-            player.changeHealth(-GetEnemyDmg(enemyType));
-        }
+        if(attackBox.intersects(player.hitbox))
+            player.changeHealth(-GetEnemyDmg(enemyType), this);
         attackChecked = true;
     }
 
@@ -136,6 +139,19 @@ public abstract class Enemy extends Entity{
                 }
             }
         }
+    }
+
+    protected void updateAttackBox() {
+        attackBox.x = hitbox.x - attackBoxOffsetX;
+        attackBox.y = hitbox.y;
+    }
+
+    protected void updateAttackBoxFlip() {
+        if(walkDir == RIGHT)
+            attackBox.x = hitbox.x + hitbox.width;
+        else
+            attackBox.x = hitbox.x - attackBoxOffsetX;
+        attackBox.y = hitbox.y;
     }
 
     protected void changeWalkDir() {
@@ -157,10 +173,22 @@ public abstract class Enemy extends Entity{
     }
 
 
+    public int flipX() {
+        if(walkDir == RIGHT) return width;
+        else return 0;
+    }
 
+    public int flipW() {
+        if(walkDir == RIGHT) return -1;
+        else return 1;
+    }
 
     public boolean isActive(){
         return active;
+    }
+
+    public float getPushDrawOffset() {
+        return pushDrawOffset;
     }
 
 }

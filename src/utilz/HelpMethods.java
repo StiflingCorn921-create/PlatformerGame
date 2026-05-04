@@ -1,6 +1,7 @@
 package utilz;
 
 import entities.Crabby;
+import entities.Zombie;
 import main.Game;
 
 import java.awt.*;
@@ -112,27 +113,62 @@ public class HelpMethods {
         return true;
     }
 
-    public static boolean IsSightClear(int[][] lvlData, Rectangle2D.Float firstHitbox, Rectangle2D.Float secondHitbox, int yTile) {
-        int firstXTile = (int)(firstHitbox.x / Game.TILES_SIZE);
-        int secondXTile = (int)(secondHitbox.x / Game.TILES_SIZE);
+    public static boolean IsSightClear(int[][] lvlData, Rectangle2D.Float enemyBox, Rectangle2D.Float playerBox, int yTile) {
+        int firstXTile = (int) (enemyBox.x / Game.TILES_SIZE);
 
-        if(firstXTile > secondXTile){
+        int secondXTile;
+        if (IsSolid(playerBox.x, playerBox.y + playerBox.height + 1, lvlData))
+            secondXTile = (int) (playerBox.x / Game.TILES_SIZE);
+        else
+            secondXTile = (int) ((playerBox.x + playerBox.width) / Game.TILES_SIZE);
+
+        if (firstXTile > secondXTile)
             return IsAllTilesWalkable(secondXTile, firstXTile, yTile, lvlData);
-        }else{
+        else
+            return IsAllTilesWalkable(firstXTile, secondXTile, yTile, lvlData);
+    }
+
+    public static boolean IsSightClear_OLD(int[][] lvlData, Rectangle2D.Float firstHitbox, Rectangle2D.Float secondHitbox, int yTile) {
+        int firstXTile = (int) (firstHitbox.x / Game.TILES_SIZE);
+        int secondXTile = (int) (secondHitbox.x / Game.TILES_SIZE);
+
+        if (firstXTile > secondXTile) {
+            return IsAllTilesWalkable(secondXTile, firstXTile, yTile, lvlData);
+        }
+        else {
             return IsAllTilesWalkable(firstXTile, secondXTile, yTile, lvlData);
         }
     }
 
-    public static int[][] GetLevelData(BufferedImage img){
+    public static int[][] GetLevelData(BufferedImage img) {
         int[][] lvlData = new int[img.getHeight()][img.getWidth()];
-
-        for(int i = 0; i < img.getHeight(); i++){
-            for(int j = 0; j < img.getWidth(); j++){
+        for(int i = 0; i < img.getHeight(); i++) {
+            for(int j = 0; j < img.getWidth(); j++) {
                 Color color = new Color(img.getRGB(j, i));
-                int value =  color.getRed();
-                if(value >= 48){
-                    value = 0;
+
+                // Skip NPC pixels
+                if(color.getBlue() >= 200) {
+                    lvlData[i][j] = 11;
+                    continue;
                 }
+                // Skip enemy pixels
+                if(color.getGreen() == CRABBY && color.getRed() == 0 && color.getBlue() == 0) {
+                    lvlData[i][j] = 11;
+                    continue;
+                }
+                // Skip zombie pixels
+                if(color.getGreen() == 1 && color.getRed() == 0 && color.getBlue() == 0) {
+                    lvlData[i][j] = 11;
+                    continue;
+                }
+                // Skip player spawn pixel
+                if(color.getGreen() == 100) {
+                    lvlData[i][j] = 11;
+                    continue;
+                }
+
+                int value = color.getRed();
+                if(value >= 48) value = 0;
                 lvlData[i][j] = value;
             }
         }
@@ -141,17 +177,41 @@ public class HelpMethods {
 
     public static ArrayList<Crabby> GetCrabs(BufferedImage img){
         ArrayList<Crabby> list = new ArrayList<>();
-
         for(int i = 0; i < img.getHeight(); i++){
             for(int j = 0; j < img.getWidth(); j++){
                 Color color = new Color(img.getRGB(j, i));
-                int value =  color.getGreen();
-                if(value == CRABBY){
+                if(color.getGreen() == CRABBY &&
+                        color.getBlue() < 200)  // exclude NPC pixels only
                     list.add(new Crabby(j * Game.TILES_SIZE, i * Game.TILES_SIZE));
-                }
             }
         }
         return list;
+    }
+
+    public static ArrayList<Zombie> GetZombies(BufferedImage img) {
+        ArrayList<Zombie> list = new ArrayList<>();
+        for(int i = 0; i < img.getHeight(); i++)
+            for(int j = 0; j < img.getWidth(); j++) {
+                Color color = new Color(img.getRGB(j, i));
+                // use green value 1 for zombie spawn
+                if(color.getGreen() == 1 && color.getRed() == 0 && color.getBlue() == 0)
+                    list.add(new Zombie(j * Game.TILES_SIZE, i * Game.TILES_SIZE));
+            }
+        return list;
+    }
+
+    public static ArrayList<Point> GetNPCSpawns(BufferedImage img, int npcType) {
+        ArrayList<Point> spawns = new ArrayList<>();
+        for (int j = 0; j < img.getHeight(); j++)
+            for (int i = 0; i < img.getWidth(); i++) {
+                Color color = new Color(img.getRGB(i, j));
+                // Only count it if RED and GREEN are also exactly 0
+                if (color.getBlue() == npcType &&
+                        color.getRed() == 0 &&
+                        color.getGreen() == 0)
+                    spawns.add(new Point(i * Game.TILES_SIZE, j * Game.TILES_SIZE));
+            }
+        return spawns;
     }
 
     public static Point GetPlayerSpawn(BufferedImage img){
@@ -166,4 +226,6 @@ public class HelpMethods {
         }
         return new Point(1 * Game.TILES_SIZE, 1 * Game.TILES_SIZE);
     }
+
+
 }

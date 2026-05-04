@@ -5,6 +5,11 @@ import main.Game;
 import java.awt.*;
 import java.awt.geom.Rectangle2D;
 
+import static utilz.Constants.Directions.DOWN;
+import static utilz.Constants.Directions.LEFT;
+import static utilz.Constants.Directions.UP;
+import static utilz.HelpMethods.CanMoveHere;
+
 public abstract class Entity {
     protected float x, y;
     protected int width, height;
@@ -17,6 +22,9 @@ public abstract class Entity {
     protected int currentHealth;
     protected Rectangle2D.Float attackBox;
     protected float walkSpeed;
+    protected int pushBackDir;
+    protected float pushDrawOffset;
+    protected int pushBackOffsetDir = UP;
 
     public Entity(float x, float y, int width, int height){
         this.x = x;
@@ -41,6 +49,39 @@ public abstract class Entity {
         hitbox = new Rectangle2D.Float(x, y, (int)(width * Game.SCALE),(int)(height * Game.SCALE));
     }
 
+    protected void updatePushBackDrawOffset() {
+        float speed = 0.95f;
+        float limit = -30f;
+
+        if(pushBackOffsetDir == UP) {
+            pushDrawOffset -= speed;
+            if(pushDrawOffset <= limit)
+                pushBackOffsetDir = DOWN;
+        } else {
+            pushDrawOffset += speed;
+            if(pushDrawOffset >= 0)
+                pushDrawOffset = 0;
+        }
+    }
+
+    protected void pushBack(int pushBackDir, int[][] lvlData, float speedMulti) {
+        float xSpeed = 0;
+        if(pushBackDir == LEFT)
+            xSpeed = -walkSpeed;
+        else
+            xSpeed = walkSpeed;
+
+        if(CanMoveHere(hitbox.x + xSpeed * speedMulti, hitbox.y, hitbox.width, hitbox.height, lvlData))
+            hitbox.x += xSpeed * speedMulti;
+    }
+
+    protected void newState(int state) {
+        this.state = state;
+        aniTick = 0;
+        aniIndex = 0;
+    }
+
+
 //    protected void updateHitbox(){
 //        hitbox.x = (int)x;
 //        hitbox.y = (int)y;
@@ -50,7 +91,7 @@ public abstract class Entity {
         return hitbox;
     }
 
-    public int getEnemyState(){
+    public int getState(){
         return state;
     }
 
