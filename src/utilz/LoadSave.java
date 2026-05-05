@@ -1,19 +1,15 @@
 package utilz;
 
-import entities.Crabby;
-import main.Game;
-
-import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
-import java.awt.Color;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.util.ArrayList;
-
-import static utilz.Constants.EnemyConstants.CRABBY;
+import java.util.Comparator;
+import java.util.List;
+import javax.imageio.ImageIO;
 
 public class LoadSave {
     public static final String PLAYER_ATLAS = "player_sprites.png";
@@ -95,30 +91,32 @@ public class LoadSave {
 
     public static BufferedImage[] GetAllLevels(){
         URL url = LoadSave.class.getResource("/lvls");
-        File file = null;
+        if(url == null) return new BufferedImage[0];
 
+        File folder = null;
         try {
-            file = new File(url.toURI());
+            folder = new File(url.toURI());
         } catch (URISyntaxException e) {
             e.printStackTrace();
+            return new BufferedImage[0];
         }
 
-        File[] files = file.listFiles();
-        File[] filesSorted = new File[files.length];
+        File[] files = folder.listFiles((dir, name) -> name.toLowerCase().endsWith(".png"));
+        if(files == null || files.length == 0) return new BufferedImage[0];
 
-        for(int i = 0; i < filesSorted.length; i++){
-            for(int j = 0; j < files.length; j++){
-                if(files[j].getName().equals((i + 1) + ".png")){
-                    filesSorted[i] = files[j];
-                }
+        List<File> levelFiles = new ArrayList<>();
+        for(File f : files){
+            if(f.getName().matches("\\d+\\.png")){
+                levelFiles.add(f);
             }
         }
 
-        BufferedImage[] imgs = new BufferedImage[filesSorted.length];
+        levelFiles.sort(Comparator.comparingInt(f -> Integer.parseInt(f.getName().replace(".png", ""))));
 
-        for(int i = 0; i < imgs.length; i++){
+        BufferedImage[] imgs = new BufferedImage[levelFiles.size()];
+        for(int i = 0; i < levelFiles.size(); i++){
             try {
-                imgs[i] = ImageIO.read(filesSorted[i]);
+                imgs[i] = ImageIO.read(levelFiles.get(i));
             } catch (IOException e) {
                 e.printStackTrace();
             }
