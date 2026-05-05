@@ -146,23 +146,33 @@ public class HelpMethods {
             for(int j = 0; j < img.getWidth(); j++) {
                 Color color = new Color(img.getRGB(j, i));
 
-                // Skip NPC pixels
-                if(color.getBlue() >= 200) {
+                // Skip NPC pixels (R=0, G=0, B=200 or 255)
+                if(color.getRed() == 0 && color.getGreen() == 0 && color.getBlue() >= 200) {
                     lvlData[i][j] = 11;
                     continue;
                 }
-                // Skip enemy pixels
-                if(color.getGreen() == CRABBY && color.getRed() == 0 && color.getBlue() == 0) {
+                // Skip spike pixels (R=0, G=0, B=4)
+                if(color.getRed() == 0 && color.getGreen() == 0 && color.getBlue() == 4) {
                     lvlData[i][j] = 11;
                     continue;
                 }
-                // Skip zombie pixels
-                if(color.getGreen() == 1 && color.getRed() == 0 && color.getBlue() == 0) {
+                // Skip portal pixels (R=0, G=0, B=100)
+                if(color.getRed() == 0 && color.getGreen() == 0 && color.getBlue() == 100) {
                     lvlData[i][j] = 11;
                     continue;
                 }
-                // Skip player spawn pixel
-                if(color.getGreen() == 100) {
+                // Skip crabby pixels (R=0, G=CRABBY, B=0)
+                if(color.getRed() == 0 && color.getGreen() == CRABBY && color.getBlue() == 0) {
+                    lvlData[i][j] = 11;
+                    continue;
+                }
+                // Skip zombie pixels (R=0, G=1, B=0)
+                if(color.getRed() == 0 && color.getGreen() == 1 && color.getBlue() == 0) {
+                    lvlData[i][j] = 11;
+                    continue;
+                }
+                // Skip player spawn pixel (G=100)
+                if(color.getRed() == 0 && color.getGreen() == 100 && color.getBlue() == 0) {
                     lvlData[i][j] = 11;
                     continue;
                 }
@@ -175,16 +185,14 @@ public class HelpMethods {
         return lvlData;
     }
 
-    public static ArrayList<Crabby> GetCrabs(BufferedImage img){
+    public static ArrayList<Crabby> GetCrabs(BufferedImage img) {
         ArrayList<Crabby> list = new ArrayList<>();
-        for(int i = 0; i < img.getHeight(); i++){
-            for(int j = 0; j < img.getWidth(); j++){
+        for(int i = 0; i < img.getHeight(); i++)
+            for(int j = 0; j < img.getWidth(); j++) {
                 Color color = new Color(img.getRGB(j, i));
-                if(color.getGreen() == CRABBY &&
-                        color.getBlue() < 200)  // exclude NPC pixels only
+                if(color.getRed() == 0 && color.getGreen() == CRABBY && color.getBlue() == 0)
                     list.add(new Crabby(j * Game.TILES_SIZE, i * Game.TILES_SIZE));
             }
-        }
         return list;
     }
 

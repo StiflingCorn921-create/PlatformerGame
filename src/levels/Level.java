@@ -3,13 +3,14 @@ package levels;
 import entities.Crabby;
 import entities.Zombie;
 import main.Game;
+import objects.Portal;
 import objects.Spike;
 
 import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.util.ArrayList;
 
-import static utilz.Constants.ObjectConstants.SPIKE;
+import static utilz.Constants.ObjectConstants.PORTAL;
 import static utilz.Constants.ObjectConstants.SPIKE;
 import static utilz.HelpMethods.*;
 
@@ -25,12 +26,13 @@ public class Level {
     private ArrayList<Point> oldManSpawns;
     private ArrayList<Point> merchantSpawns;
     private ArrayList<Spike> spikes = new ArrayList<>();
-
+    private ArrayList<Portal> portals = new ArrayList<>();
 
     public Level(BufferedImage img){
         this.img = img;
         createLevelData();
         createEnemies();
+        createObjects();
         calculateLvlOffsets();
         calcPlayerSpawn();
         oldManSpawns   = GetNPCSpawns(img, 255);
@@ -38,12 +40,15 @@ public class Level {
         zombies = GetZombies(img);
     }
 
-    private void loadObjects(int blueValue, int x, int y){
-        switch(blueValue){
-            case SPIKE:
-                spikes.add(new Spike(x * Game.TILES_SIZE, y * Game.TILES_SIZE, SPIKE));
-                break;
-        }
+    private void createObjects() {
+        for (int j = 0; j < img.getHeight(); j++)
+            for (int i = 0; i < img.getWidth(); i++) {
+                Color color = new Color(img.getRGB(i, j));
+                if (color.getRed() == 0 && color.getGreen() == 0 && color.getBlue() == SPIKE)
+                    spikes.add(new Spike(i * Game.TILES_SIZE, j * Game.TILES_SIZE, SPIKE));
+                else if (color.getRed() == 0 && color.getGreen() == 0 && color.getBlue() == PORTAL)
+                    portals.add(new Portal(i * Game.TILES_SIZE, j * Game.TILES_SIZE));
+            }
     }
 
     private void calcPlayerSpawn() {
@@ -54,6 +59,14 @@ public class Level {
         lvlTilesWide = img.getWidth();
         maxTilesOffset = lvlTilesWide - Game.TILES_IN_WIDTH;
         maxLvlOffsetX = Game.TILES_SIZE * maxTilesOffset;
+    }
+
+    public void resetEnemies() {
+        crabs  = GetCrabs(img);
+        zombies = GetZombies(img);
+        spikes = new ArrayList<>();
+        portals = new ArrayList<>();
+        createObjects();
     }
 
     private void createEnemies() {
@@ -93,4 +106,6 @@ public class Level {
     public ArrayList<Spike> getSpikes() {
         return spikes;
     }
+
+    public ArrayList<Portal> getPortals() { return portals; }
 }

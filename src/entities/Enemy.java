@@ -1,5 +1,6 @@
 package entities;
 
+import gamestates.Playing;
 import main.Game;
 
 import java.awt.geom.Rectangle2D;
@@ -19,6 +20,7 @@ public abstract class Enemy extends Entity{
     protected boolean active = true;
     protected boolean attackChecked;
     protected int attackBoxOffsetX;
+    protected Playing playing;
 
 
 
@@ -56,22 +58,21 @@ public abstract class Enemy extends Entity{
         }
     }
 
-    protected void move(int[][] lvlData){
-        float xSpeed = 0;
+    protected void move(int[][] lvlData) {
+        float xSpeed = (walkDir == LEFT) ? -walkSpeed : walkSpeed;
 
-        if(walkDir == LEFT){
-            xSpeed = -walkSpeed;
-        }else{
-            xSpeed = walkSpeed;
+        // spike avoidance — stop and turn if spike is ahead
+        if (playing != null && playing.getObjectManager().isSpikeAhead(hitbox, walkDir)) {
+            changeWalkDir();
+            return;
         }
 
-        if(CanMoveHere(hitbox.x + xSpeed, hitbox.y, hitbox.width, hitbox.height, lvlData)){
-            if(IsFloor(hitbox, xSpeed, lvlData)){
+        if (CanMoveHere(hitbox.x + xSpeed, hitbox.y, hitbox.width, hitbox.height, lvlData)) {
+            if (IsFloor(hitbox, xSpeed, lvlData)) {
                 hitbox.x += xSpeed;
                 return;
             }
         }
-
         changeWalkDir();
     }
 
@@ -110,12 +111,23 @@ public abstract class Enemy extends Entity{
         return absValue <= attackDistance;
     }
 
-    public void hurt(int amount){
+    public void hurt(int amount) {
         currentHealth -= amount;
-        if(currentHealth <= 0){
+        if (currentHealth <= 0)
             newState(DEAD);
-        }else{
+        else
             newState(HIT);
+    }
+
+    public void hurt(int amount, int playerDir) {
+        currentHealth -= amount;
+        if (currentHealth <= 0)
+            newState(DEAD);
+        else {
+            newState(HIT);
+            // knock away from player
+            int knockDir = (playerDir == RIGHT) ? RIGHT : LEFT;
+            applyKnockback(knockDir, -1.5f * Game.SCALE, 1.0f);
         }
     }
 
@@ -162,7 +174,7 @@ public abstract class Enemy extends Entity{
         }
     }
 
-    public void resetEnemy(){
+    public void resetEnemy() {
         hitbox.x = x;
         hitbox.y = y;
         firstUpdate = true;
@@ -170,6 +182,8 @@ public abstract class Enemy extends Entity{
         newState(IDLE);
         active = true;
         airSpeed = 0;
+        inAir = false;
+        pushDrawOffset = 0;
     }
 
 
@@ -189,6 +203,10 @@ public abstract class Enemy extends Entity{
 
     public float getPushDrawOffset() {
         return pushDrawOffset;
+    }
+
+    public void setPlaying(Playing playing) {
+        this.playing = playing;
     }
 
 }

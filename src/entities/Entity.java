@@ -10,6 +10,10 @@ import static utilz.Constants.Directions.LEFT;
 import static utilz.Constants.Directions.UP;
 import static utilz.HelpMethods.CanMoveHere;
 
+import static utilz.Constants.GRAVITY;
+import static utilz.HelpMethods.CanMoveHere;
+import static utilz.HelpMethods.GetEntityYPosUnderRoofOrAboveFloor;
+
 public abstract class Entity {
     protected float x, y;
     protected int width, height;
@@ -25,6 +29,7 @@ public abstract class Entity {
     protected int pushBackDir;
     protected float pushDrawOffset;
     protected int pushBackOffsetDir = UP;
+    protected float currentPushSpeed;
 
     public Entity(float x, float y, int width, int height){
         this.x = x;
@@ -32,6 +37,39 @@ public abstract class Entity {
         this.width = width;
         this.height = height;
 
+    }
+
+
+
+    protected void applyKnockback(int direction, float force, float speed) {
+        this.pushBackDir = direction;
+        this.currentPushSpeed = speed;
+        this.pushDrawOffset = 0;
+        this.pushBackOffsetDir = UP;
+        this.inAir = true;
+        this.airSpeed = force;
+    }
+
+    protected void updateKnockback(int[][] lvlData) {
+        // horizontal slide
+        float xSpeed = (pushBackDir == LEFT) ? -currentPushSpeed : currentPushSpeed;
+        if (CanMoveHere(hitbox.x + xSpeed, hitbox.y, hitbox.width, hitbox.height, lvlData))
+            hitbox.x += xSpeed;
+
+        // vertical arc
+        if (CanMoveHere(hitbox.x, hitbox.y + airSpeed, hitbox.width, hitbox.height, lvlData)) {
+            hitbox.y += airSpeed;
+            airSpeed += GRAVITY;
+        } else {
+            hitbox.y = GetEntityYPosUnderRoofOrAboveFloor(hitbox, airSpeed);
+            if (airSpeed > 0) {
+                inAir = false;
+                airSpeed = 0;
+            } else {
+                airSpeed = 0.5f * Game.SCALE;
+            }
+        }
+        updatePushBackDrawOffset();
     }
 
     protected void drawAttackBox(Graphics g, int xLvlOffset){
@@ -98,4 +136,7 @@ public abstract class Entity {
     public int getAniIndex(){
         return aniIndex;
     }
+
+    public int getCurrentHealth() { return currentHealth; }
 }
+

@@ -48,6 +48,7 @@ public class LoadSave {
     public static final String ZOMBIE_DEATH  = "sprites/Zombie/Zombie_Death.png";
 
     public static final String TRAP_ATLAS = "trap_atlas.png";
+    public static final String PORTAL_ATLAS = "portal.png";
 
     public static final String STATUS_BAR = "health_power_bar.png";
 

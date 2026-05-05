@@ -12,21 +12,13 @@ import levels.Level;
 import main.Game;
 import utilz.LoadSave;
 import static utilz.Constants.ObjectConstants.*;
-//import static utilz.HelpMethods.CanCannonSeePlayer;
-//import static utilz.HelpMethods.IsProjectileHittingLevel;
-//import static utilz.Constants.Projectiles.*;
 
 public class ObjectManager {
 
     private Playing playing;
-//    private BufferedImage[][] potionImgs, containerImgs;
-//    private BufferedImage[] grassImgs;
     private BufferedImage spikeImg;
-//    private ArrayList<Potion> potions;
-//    private ArrayList<GameContainer> containers;
-//    private ArrayList<Projectile> projectiles = new ArrayList<>();
-
     private Level currentLevel;
+    private BufferedImage[] portalImgs;
 
     public ObjectManager(Playing playing) {
         this.playing = playing;
@@ -42,119 +34,84 @@ public class ObjectManager {
 
     public void checkSpikesTouched(Enemy e) {
         for (Spike s : currentLevel.getSpikes())
-            if (s.getHitbox().intersects(e.getHitbox()))
-                e.hurt(200);
+            if (s.getHitbox().intersects(e.getHitbox())) {
+                e.hurt(e.getCurrentHealth()); // instant kill
+                return;
+            }
     }
 
-//    public void checkObjectTouched(Rectangle2D.Float hitbox) {
-//        for (Potion p : potions)
-//            if (p.isActive()) {
-//                if (hitbox.intersects(p.getHitbox())) {
-//                    p.setActive(false);
-//                    applyEffectToPlayer(p);
-//                }
-//            }
-//    }
+    public boolean isSpikeAhead(Rectangle2D.Float hitbox, int walkDir) {
+        float lookX = (walkDir == utilz.Constants.Directions.LEFT)
+                ? hitbox.x - Game.TILES_SIZE
+                : hitbox.x + hitbox.width + Game.TILES_SIZE;
 
-//    public void applyEffectToPlayer(Potion p) {
-//        if (p.getObjType() == RED_POTION)
-//            playing.getPlayer().changeHealth(RED_POTION_VALUE);
-//        else
-//            playing.getPlayer().changePower(BLUE_POTION_VALUE);
-//    }
-
-//    public void checkObjectHit(Rectangle2D.Float attackbox) {
-//        for (GameContainer gc : containers)
-//            if (gc.isActive() && !gc.doAnimation) {
-//                if (gc.getHitbox().intersects(attackbox)) {
-//                    gc.setAnimation(true);
-//                    int type = 0;
-//                    if (gc.getObjType() == BARREL)
-//                        type = 1;
-//                    potions.add(new Potion((int) (gc.getHitbox().x + gc.getHitbox().width / 2), (int) (gc.getHitbox().y - gc.getHitbox().height / 2), type));
-//                    return;
-//                }
-//            }
-//    }
+        for (Spike s : currentLevel.getSpikes()) {
+            if (s.getHitbox().x <= lookX + Game.TILES_SIZE &&
+                    s.getHitbox().x + s.getHitbox().width >= lookX &&
+                    Math.abs(s.getHitbox().y - (hitbox.y + hitbox.height)) < Game.TILES_SIZE)
+                return true;
+        }
+        return false;
+    }
 
     public void loadObjects(Level newLevel) {
         currentLevel = newLevel;
-//        potions = new ArrayList<>(newLevel.getPotions());
-//        containers = new ArrayList<>(newLevel.getContainers());
-//        projectiles.clear();
     }
 
     private void loadImgs() {
-//        BufferedImage potionSprite = LoadSave.GetSpriteAtlas(LoadSave.POTION_ATLAS);
-//        potionImgs = new BufferedImage[2][7];
-//
-//        for (int j = 0; j < potionImgs.length; j++)
-//            for (int i = 0; i < potionImgs[j].length; i++)
-//                potionImgs[j][i] = potionSprite.getSubimage(12 * i, 16 * j, 12, 16);
-//
-//        BufferedImage containerSprite = LoadSave.GetSpriteAtlas(LoadSave.CONTAINER_ATLAS);
-//        containerImgs = new BufferedImage[2][8];
-//
-//        for (int j = 0; j < containerImgs.length; j++)
-//            for (int i = 0; i < containerImgs[j].length; i++)
-//                containerImgs[j][i] = containerSprite.getSubimage(40 * i, 30 * j, 40, 30);
-
         spikeImg = LoadSave.GetSpriteAtlas(LoadSave.TRAP_ATLAS);
-
+        BufferedImage portalSheet = LoadSave.GetSpriteAtlas(LoadSave.PORTAL_ATLAS);
+        if (portalSheet != null) {
+            portalImgs = new BufferedImage[6];
+            int frameW = portalSheet.getWidth() / 3;  // 3 columns
+            int frameH = portalSheet.getHeight() / 2; // 2 rows
+            int idx = 0;
+            for (int row = 0; row < 2; row++)
+                for (int col = 0; col < 3; col++)
+                    portalImgs[idx++] = portalSheet.getSubimage(
+                            col * frameW, row * frameH, frameW, frameH);
+        }
     }
 
-//    public void update(int[][] lvlData, Player player) {
-//        updateBackgroundTrees();
-//        for (Potion p : potions)
-//            if (p.isActive())
-//                p.update();
-//
-//        for (GameContainer gc : containers)
-//            if (gc.isActive())
-//                gc.update();
-//    }
-
     public void draw(Graphics g, int xLvlOffset) {
-//        drawPotions(g, xLvlOffset);
-//        drawContainers(g, xLvlOffset);
         drawTraps(g, xLvlOffset);
+        drawPortals(g, xLvlOffset);
+    }
 
+    public void updatePortals(boolean allEnemiesCleared) {
+        for (Portal p : currentLevel.getPortals())
+            p.update(allEnemiesCleared);
+    }
+
+    public boolean isPlayerAtOpenPortal(Rectangle2D.Float playerHitbox) {
+        for (Portal p : currentLevel.getPortals())
+            if (p.isUnlocked() && p.getHitbox().intersects(playerHitbox))
+                return true;
+        return false;
+    }
+
+    private void drawPortals(Graphics g, int xLvlOffset) {
+        for (Portal p : currentLevel.getPortals()) {
+            if (portalImgs == null) return;
+            int frame = p.isUnlocked() ? p.getAniIndex() : 0; // frame 0 = closed
+            g.drawImage(portalImgs[frame],
+                    (int)(p.getHitbox().x - xLvlOffset) - PORTAL_DRAWOFFSET_X,
+                    (int)(p.getHitbox().y)               - PORTAL_DRAWOFFSET_Y,
+                    PORTAL_WIDTH, PORTAL_HEIGHT, null);
+        }
     }
 
     private void drawTraps(Graphics g, int xLvlOffset) {
         for (Spike s : currentLevel.getSpikes())
             g.drawImage(spikeImg, (int) (s.getHitbox().x - xLvlOffset), (int) (s.getHitbox().y - s.getyDrawOffset()), SPIKE_WIDTH, SPIKE_HEIGHT, null);
-
     }
-//
-//    private void drawContainers(Graphics g, int xLvlOffset) {
-//        for (GameContainer gc : containers)
-//            if (gc.isActive()) {
-//                int type = 0;
-//                if (gc.getObjType() == BARREL)
-//                    type = 1;
-//                g.drawImage(containerImgs[type][gc.getAniIndex()], (int) (gc.getHitbox().x - gc.getxDrawOffset() - xLvlOffset), (int) (gc.getHitbox().y - gc.getyDrawOffset()), CONTAINER_WIDTH,
-//                        CONTAINER_HEIGHT, null);
-//            }
-//    }
 
-//    private void drawPotions(Graphics g, int xLvlOffset) {
-//        for (Potion p : potions)
-//            if (p.isActive()) {
-//                int type = 0;
-//                if (p.getObjType() == RED_POTION)
-//                    type = 1;
-//                g.drawImage(potionImgs[type][p.getAniIndex()], (int) (p.getHitbox().x - p.getxDrawOffset() - xLvlOffset), (int) (p.getHitbox().y - p.getyDrawOffset()), POTION_WIDTH, POTION_HEIGHT,
-//                        null);
-//            }
-//    }
+    public void unlockPortalsForEmptyLevel() {
+        for (Portal p : currentLevel.getPortals())
+            p.forceUnlock();
+    }
 
     public void resetAllObjects() {
         loadObjects(playing.getLevelManager().getCurrentLevel());
-//        for (Potion p : potions)
-//            p.reset();
-//        for (GameContainer gc : containers)
-//            gc.reset();
-//
     }
 }

@@ -11,10 +11,8 @@ import entities.NPC;
 
 import java.util.ArrayList;
 
-// TODO: uncomment when implemented
-// import objects.ObjectManager;
- import ui.GameCompletedOverlay;
- import audio.AudioPlayer;
+import ui.GameCompletedOverlay;
+import audio.AudioPlayer;
 
 import java.awt.*;
 import java.awt.event.KeyEvent;
@@ -27,7 +25,7 @@ public class Playing extends State implements Statemethods {
     private Player player;
     private LevelManager levelManager;
     private EnemyManager enemyManager;
-     private ObjectManager objectManager;
+    private ObjectManager objectManager;
     private PauseOverlay pauseOverlay;
     private GameOverOverlay gameOverOverlay;
     private GameCompletedOverlay gameCompletedOverlay;
@@ -52,6 +50,7 @@ public class Playing extends State implements Statemethods {
     private NPC activeNPC = null;
     private DialogueOverlay dialogueOverlay;
     private boolean dialogueActive = false;
+    private boolean allEnemiesCleared = false;
 
     public Playing(Game game) {
         super(game);
@@ -70,6 +69,12 @@ public class Playing extends State implements Statemethods {
         resetAll();
         levelManager.loadNextLevel();
         player.setSpawn(levelManager.getCurrentLevel().getPlayerSpawn());
+        player.resetAll();
+        game.getAudioPlayer().setLevelSong(levelManager.getLvlIndex());
+        npcs.clear();
+        initNPCs();
+        xLvlOffset = 0;
+        calcLvlOffset();
     }
 
     private void loadStartLevel() {
@@ -140,13 +145,22 @@ public class Playing extends State implements Statemethods {
         } else {
             levelManager.update();
             player.update();
+
+            allEnemiesCleared = enemyManager.areAllEnemiesCleared();
             enemyManager.update(levelManager.getCurrentLevel().getLevelData(), player);
-            // TODO: uncomment when ObjectManager is implemented
-            // objectManager.update(levelManager.getCurrentLevel().getLevelData(), player);
+            objectManager.updatePortals(allEnemiesCleared);
+            objectManager.checkSpikesTouched(player);
+            enemyManager.checkSpikesTouched(objectManager);
+
             checkCloseToBorder();
-            for(NPC npc : npcs)
+            for (NPC npc : npcs)
                 npc.update();
         }
+
+    }
+
+    public void checkSpikesTouched(Player p) {
+        objectManager.checkSpikesTouched(p);
     }
 
     private void checkCloseToBorder() {
@@ -190,6 +204,7 @@ public class Playing extends State implements Statemethods {
     }
 
     public void resetAll() {
+        allEnemiesCleared = false;
         gameOver = false;
         paused = false;
         lvlCompleted = false;
@@ -224,20 +239,6 @@ public class Playing extends State implements Statemethods {
         enemyManager.checkEnemyHit(attackBox);
     }
 
-    // TODO: uncomment when ObjectManager is implemented
-    // public void checkObjectHit(Rectangle2D.Float attackBox) {
-    //     objectManager.checkObjectHit(attackBox);
-    // }
-
-    // TODO: uncomment when ObjectManager is implemented
-    // public void checkPotionTouched(Rectangle2D.Float hitbox) {
-    //     objectManager.checkObjectTouched(hitbox);
-    // }
-
-     public void checkSpikesTouched(Player p) {
-         objectManager.checkSpikesTouched(p);
-     }
-
     public void mouseDragged(MouseEvent e) {
         if(!gameOver)
             if(paused)
@@ -249,9 +250,6 @@ public class Playing extends State implements Statemethods {
         if(!gameOver) {
             if(e.getButton() == MouseEvent.BUTTON1)
                 player.setAttacking(true);
-            // TODO: uncomment when power attack is implemented
-            // else if(e.getButton() == MouseEvent.BUTTON3)
-            //     player.powerAttack();
         }
     }
 
@@ -263,8 +261,8 @@ public class Playing extends State implements Statemethods {
             pauseOverlay.mousePressed(e);
         else if(lvlCompleted)
             levelCompletedOverlay.mousePressed(e);
-         else if(gameCompleted)
-             gameCompletedOverlay.mousePressed(e);
+        else if(gameCompleted)
+            gameCompletedOverlay.mousePressed(e);
     }
 
     @Override
@@ -275,8 +273,8 @@ public class Playing extends State implements Statemethods {
             pauseOverlay.mouseReleased(e);
         else if(lvlCompleted)
             levelCompletedOverlay.mouseReleased(e);
-         else if(gameCompleted)
-             gameCompletedOverlay.mouseReleased(e);
+        else if(gameCompleted)
+            gameCompletedOverlay.mouseReleased(e);
     }
 
     @Override
@@ -290,7 +288,7 @@ public class Playing extends State implements Statemethods {
         else if(lvlCompleted) {
             levelCompletedOverlay.mouseMoved(e);
         }
-         else if(gameCompleted) {
+        else if(gameCompleted) {
             gameCompletedOverlay.mouseMoved(e);
         }
     }
@@ -306,7 +304,10 @@ public class Playing extends State implements Statemethods {
                     player.setRight(true);
                     break;
                 case KeyEvent.VK_E:
-                    handleNPCInteract();
+                    if (objectManager.isPlayerAtOpenPortal(player.getHitbox()))
+                        loadNextLevel();
+                    else
+                        handleNPCInteract();
                     break;
                 case KeyEvent.VK_SPACE:
                     player.setJump(true);
@@ -358,13 +359,24 @@ public class Playing extends State implements Statemethods {
 
     public void setLevelCompleted(boolean levelCompleted) {
         game.getAudioPlayer().lvlCompleted();
-        if(levelManager.getLvlIndex() + 1 >= levelManager.getAmountOfLevels()) {
-            gameCompleted = true;
-            levelManager.loadNextLevel();
+        if (levelManager.getLvlIndex() + 1 >= levelManager.getAmountOfLevels()) {
+            levelManager.loadNextLevel(); // resets to 0 and goes to menu already
             resetAll();
+            game.getAudioPlayer().playSong(AudioPlayer.MENU_1);
             return;
         }
         this.lvlCompleted = levelCompleted;
+    }
+
+    public void restartGame() {
+        levelManager.resetLevelIndex();
+        player.setSpawn(levelManager.getCurrentLevel().getPlayerSpawn());
+        player.resetAll();
+        resetAll();
+        xLvlOffset = 0;
+        calcLvlOffset();
+        npcs.clear();
+        initNPCs();
     }
 
     public void setMaxLvlOffset(int lvlOffset) {
@@ -383,4 +395,6 @@ public class Playing extends State implements Statemethods {
     public EnemyManager getEnemyManager() { return enemyManager; }
     public LevelManager getLevelManager() { return levelManager; }
     public ObjectManager getObjectManager() { return objectManager; }
+
+
 }

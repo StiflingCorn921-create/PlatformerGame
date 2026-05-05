@@ -21,15 +21,27 @@ public class LevelManager {
         buildAllLevels();
     }
 
-    public void loadNextLevel(){
+    public void loadNextLevel() {
         lvlIndex++;
-        if(lvlIndex >= levels.size()){
+        if (lvlIndex >= levels.size()) {
             lvlIndex = 0;
             System.out.println("No more levels! Game Completed!");
             Gamestate.state = Gamestate.MENU;
+            return;
         }
 
         Level newLevel = levels.get(lvlIndex);
+        newLevel.resetEnemies(); // fresh enemy objects
+        game.getPlaying().getEnemyManager().loadEnemies(newLevel);
+        game.getPlaying().getPlayer().loadLvlData(newLevel.getLevelData());
+        game.getPlaying().setMaxLvlOffset(newLevel.getLvlOffset());
+        game.getPlaying().getObjectManager().loadObjects(newLevel);
+    }
+
+    public void resetLevelIndex() {
+        lvlIndex = 0;
+        Level newLevel = levels.get(lvlIndex);
+        newLevel.resetEnemies(); // fresh enemy objects here too
         game.getPlaying().getEnemyManager().loadEnemies(newLevel);
         game.getPlaying().getPlayer().loadLvlData(newLevel.getLevelData());
         game.getPlaying().setMaxLvlOffset(newLevel.getLvlOffset());
@@ -86,4 +98,5 @@ public class LevelManager {
     public int getLvlIndex(){
         return lvlIndex;
     }
+
 }

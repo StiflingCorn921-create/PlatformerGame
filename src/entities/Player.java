@@ -73,7 +73,7 @@ public class Player extends Entity {
     private void initAttackBox() {
         attackBox = new Rectangle2D.Float(x, y,
                 (int)(20 * Game.SCALE),
-                (int)(20 * Game.SCALE));
+                (int)(27 * Game.SCALE));
     }
 
     public void update() {
@@ -87,7 +87,6 @@ public class Player extends Entity {
                 playing.setPlayerDying(true);
                 playing.getGame().getAudioPlayer().playEffect(AudioPlayer.DIE);
 
-                // Check if player died in air
                 if (!IsEntityOnFloor(hitbox, lvlData)) {
                     inAir = true;
                     airSpeed = 0;
@@ -99,7 +98,6 @@ public class Player extends Entity {
             } else {
                 updateAnimationTick();
 
-                // Fall if in air
                 if (inAir)
                     if (CanMoveHere(hitbox.x, hitbox.y + airSpeed, hitbox.width, hitbox.height, lvlData)) {
                         hitbox.y += airSpeed;
@@ -114,9 +112,7 @@ public class Player extends Entity {
         updateAttackBox();
 
         if (state == HIT) {
-            if (aniIndex <= GetSpriteAmount(state) - 3)
-                pushBack(pushBackDir, lvlData, 1.25f);
-            updatePushBackDrawOffset();
+            updateKnockback(lvlData);
         } else {
             updatePos();
         }
@@ -141,12 +137,19 @@ public class Player extends Entity {
     }
 
     private void updateAttackBox() {
-        if (right)
-            attackBox.x = hitbox.x + hitbox.width + (int)(Game.SCALE * 10);
-        else if (left)
-            attackBox.x = hitbox.x - hitbox.width - (int)(Game.SCALE * 10);
-
-        attackBox.y = hitbox.y + (Game.SCALE * 10);
+        if (right && !left) {
+            attackBox.x = hitbox.x + hitbox.width + (int)(Game.SCALE * 3);
+            flipX = 0;
+            flipW = 1;
+        } else if (left && !right) {
+            attackBox.x = hitbox.x - attackBox.width - (int)(Game.SCALE * 3);
+        } else {
+            if (flipW == 1)
+                attackBox.x = hitbox.x + hitbox.width + (int)(Game.SCALE * 3);
+            else
+                attackBox.x = hitbox.x - attackBox.width - (int)(Game.SCALE * 3);
+        }
+        attackBox.y = hitbox.y + (Game.SCALE * 5);
     }
 
     private void updateHealthBar() {
@@ -161,6 +164,9 @@ public class Player extends Entity {
                     (int)(hitbox.y - yDrawOffset + (int)(pushDrawOffset)),
                     width * flipW, height, null);
         }
+//        drawAttackBox(g, lvlOffset);
+//        drawHitbox(g, lvlOffset);
+
         drawUI(g);
     }
 
@@ -188,11 +194,11 @@ public class Player extends Entity {
                 aniIndex = 0;
                 attacking = false;
                 attackChecked = false;
-                // Fix 3: HIT state exit
                 if (state == HIT) {
                     newState(IDLE);
                     airSpeed = 0f;
-                    if (!IsFloor(hitbox, 0, lvlData))
+                    pushDrawOffset = 0;
+                    if (!IsEntityOnFloor(hitbox, lvlData))
                         inAir = true;
                 }
             }
@@ -202,7 +208,6 @@ public class Player extends Entity {
     private void setAnimation() {
         int startAni = state;
 
-        // Fix 2: HIT state guard
         if (state == HIT)
             return;
 
@@ -301,7 +306,7 @@ public class Player extends Entity {
             hitbox.x = GetEntityXPosNextToWall(hitbox, xSpeed);
     }
 
-    // Fix 1: changeHealth with HIT state check
+//    changeHealth with HIT state check
     public void changeHealth(int value) {
         if (value < 0) {
             if (state == HIT) return;
@@ -311,16 +316,19 @@ public class Player extends Entity {
         currentHealth = Math.max(Math.min(currentHealth, maxHealth), 0);
     }
 
-    // Fix 1: overload with enemy source for pushback direction
+//    overload for pushback direction
     public void changeHealth(int value, Enemy e) {
         if (state == HIT) return;
         changeHealth(value);
         pushBackOffsetDir = UP;
         pushDrawOffset = 0;
+//        knock away from enemy
         if (e.getHitbox().x < hitbox.x)
             pushBackDir = RIGHT;
         else
             pushBackDir = LEFT;
+//        launch upward
+        applyKnockback(pushBackDir, -1.5f * Game.SCALE, 1.0f);
     }
 
     private void loadAnimations() {
@@ -355,6 +363,7 @@ public class Player extends Entity {
     public void resetDirBooleans() {
         left = false;
         right = false;
+        jump = false;
     }
 
     public void setAttacking(boolean attacking) {
@@ -376,6 +385,7 @@ public class Player extends Entity {
         currentHealth = maxHealth;
         airSpeed = 0f;
 
+
         hitbox.x = x;
         hitbox.y = y;
 
@@ -385,5 +395,9 @@ public class Player extends Entity {
 
     public void kill() {
         currentHealth = 0;
+    }
+
+    public int getWalkDir() {
+        return (flipW == 1) ? RIGHT : LEFT;
     }
 }

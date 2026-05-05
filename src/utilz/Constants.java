@@ -7,7 +7,7 @@ public class Constants {
     public static final int ANI_SPEED = 25;
 
     public static class EnemyConstants {
-        public static final int CRABBY = 0;
+        public static final int CRABBY = 22;
         public static final int ZOMBIE = 1;
 
         public static final int IDLE = 0;
@@ -51,7 +51,7 @@ public class Constants {
 
         public static int GetMaxHealth(int enemy_type) {
             switch(enemy_type) {
-                case CRABBY: return 10;
+                case CRABBY: return 20;
                 case ZOMBIE: return 30;
                 default: return 1;
             }
@@ -59,8 +59,8 @@ public class Constants {
 
         public static int GetEnemyDmg(int enemy_type) {
             switch(enemy_type) {
-                case CRABBY: return 15;
-                case ZOMBIE: return 20;
+                case CRABBY: return 10;
+                case ZOMBIE: return 15;
                 default: return 0;
             }
         }
@@ -68,26 +68,26 @@ public class Constants {
 
     public static class ObjectConstants {
         public static final int SPIKE = 4;
+        public static final int PORTAL = 100;
 
         public static final int SPIKE_WIDTH_DEFAULT = 32;
         public static final int SPIKE_HEIGHT_DEFAULT = 32;
         public static final int SPIKE_WIDTH = (int)(Game.SCALE * SPIKE_WIDTH_DEFAULT);
         public static final int SPIKE_HEIGHT = (int)(Game.SCALE * SPIKE_HEIGHT_DEFAULT);
 
-        // TODO: uncomment when potions/containers implemented
-        // public static final int RED_POTION = 0;
-        // public static final int BLUE_POTION = 1;
+        public static final int PORTAL_WIDTH_DEFAULT  = 32;
+        public static final int PORTAL_HEIGHT_DEFAULT = 32;
+        public static final int PORTAL_WIDTH  = (int)(PORTAL_WIDTH_DEFAULT  * Game.SCALE);
+        public static final int PORTAL_HEIGHT = (int)(PORTAL_HEIGHT_DEFAULT * Game.SCALE);
+        public static final int PORTAL_DRAWOFFSET_X = 0;
+        public static final int PORTAL_DRAWOFFSET_Y = 0;
 
-        // public static final int RED_POTION_VALUE = 15;
-        // public static final int BLUE_POTION_VALUE = 10;
-
-        // public static final int POTION_WIDTH_DEFAULT = 12;
-        // public static final int POTION_HEIGHT_DEFAULT = 16;
-        // public static final int POTION_WIDTH = (int)(Game.SCALE * POTION_WIDTH_DEFAULT);
-        // public static final int POTION_HEIGHT = (int)(Game.SCALE * POTION_HEIGHT_DEFAULT);
-
-        public static int GetSpriteAmount(int object_type) {
-            return 1; // only spikes for now, no animation
+        public static int GetSpriteAmount(int objType) {
+            return switch (objType) {
+                case SPIKE  -> 1;
+                case PORTAL -> 6;
+                default -> 1;
+            };
         }
     }
 

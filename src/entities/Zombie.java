@@ -13,7 +13,7 @@ public class Zombie extends Enemy {
         super(x, y, ZOMBIE_WIDTH, ZOMBIE_HEIGHT, ZOMBIE);
         initHitbox(20, 28);
         initAttackBox(30, 30, (int)(Game.SCALE * 10));
-        walkSpeed = Game.SCALE * 0.2f; // faster than crabby
+        walkSpeed = Game.SCALE * 0.2f;
     }
 
     public void update(int[][] lvlData, Player player) {
@@ -23,7 +23,7 @@ public class Zombie extends Enemy {
     }
 
     protected void updateAttackBox() {
-        if(walkDir == RIGHT)
+        if (walkDir == RIGHT)
             attackBox.x = hitbox.x + hitbox.width;
         else
             attackBox.x = hitbox.x - attackBox.width;
@@ -31,36 +31,39 @@ public class Zombie extends Enemy {
     }
 
     private void updateBehavior(int[][] lvlData, Player player) {
-        if(firstUpdate)
+        if (firstUpdate)
             firstUpdateCheck(lvlData);
 
-        if(inAir) {
+        if (state == HIT) {
+            updateKnockback(lvlData);
+            if (!inAir) {
+                pushDrawOffset = 0;
+                newState(IDLE);
+            }
+            return;
+        }
+
+        if (inAir) {
             updateInAir(lvlData);
         } else {
-            switch(state) {
-                case IDLE:
-                    newState(RUNNING);
-                    break;
-                case RUNNING:
-                    if(canSeePlayer(lvlData, player)) {
+            switch (state) {
+                case IDLE -> newState(RUNNING);
+                case RUNNING -> {
+                    if (canSeePlayer(lvlData, player)) {
                         turnTowardsPlayer(player);
-                        if(isPlayerCloseForAttack(player))
+                        if (isPlayerCloseForAttack(player))
                             newState(ATTACK);
                     }
                     move(lvlData);
-                    break;
-                case ATTACK:
-                    if(aniIndex == 0)
-                        attackChecked = false;
-                    if(aniIndex == 2 && !attackChecked)
+                }
+                case ATTACK -> {
+                    if (aniIndex == 0) attackChecked = false;
+                    if (aniIndex == 2 && !attackChecked)
                         checkEnemyHit(attackBox, player);
-                    break;
-                case HIT:
-                    break;
+                }
             }
         }
     }
-
 
     public int getWalkDir() { return walkDir; }
 }
